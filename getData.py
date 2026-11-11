@@ -2,8 +2,8 @@ import fastf1
 import numpy as np
 import pandas as pd
 
-OLDEST_YEAR = 2025
-LATEST_YEAR = 2026
+OLDEST_YEAR = 2023
+LATEST_YEAR = 2024
 
 Drivers = []
 Quali_Positions = []
@@ -22,6 +22,7 @@ def getDriverPos(result_grid, driver):
     while index <= len(result_grid) - 1:
         if result_grid[index] == driver:
             return index + 1
+        index += 1
     return -1
 
 for year in range(OLDEST_YEAR, LATEST_YEAR):
@@ -36,8 +37,11 @@ for year in range(OLDEST_YEAR, LATEST_YEAR):
     ]
 
     schedule = schedule["EventName"].to_numpy()
+    if year == 2026:
+        schedule = schedule[:19] # Shortens the list so its only uptil brazil
 
     for gp in schedule:
+        print(f"Now processing {gp} {year}")
 
         qualiSession = fastf1.get_session(year, gp, 'Q')
         qualiSession.load(weather=True)
@@ -64,7 +68,7 @@ for year in range(OLDEST_YEAR, LATEST_YEAR):
             # GET TEAM NAME
             Teams = qualiSession.results['TeamName'].to_numpy()
 
-            # GET RACE PACE
+            # GET QUALI PACE
             driverLaps = qualiSession.laps.pick_drivers(driver)
             race_pace_laps = driverLaps.pick_quicklaps().pick_wo_box()
             lap_times = race_pace_laps['LapTime'].dt.total_seconds()
@@ -75,6 +79,8 @@ for year in range(OLDEST_YEAR, LATEST_YEAR):
             result = getDriverPos(resultGrid, driver)
             if result == -1:
                 print(f"ERROR: DRIVER POSITION COULD NOT BE FOUND. RACE: {gp}, YEAR: {year}, DRIVER: {driver}")
+            else:
+                print(f"RACE RESULT: {result}")
 
             # FORMAT DATA
             Drivers.append(driver)
@@ -88,19 +94,21 @@ for year in range(OLDEST_YEAR, LATEST_YEAR):
             Years.append(year)
             Results.append(result)
 
+            print("Data formatted successfully")
+
 trainingData = {
     "Driver": Drivers,
-    "Qualifying Position": Quali_Positions,
+    "QualifyingPosition": Quali_Positions,
     "Team": TeamList,
     "Race": Races,
     "Year": Years,
-    "Air Temps": AirTemps,
+    "AirTemps": AirTemps,
     "TrackTemps": TrackTemps,
     "Rain": RainData,
-    "Qualifying Pace": Quali_Pace_Data,
-    "Race Result": Results
+    "QualifyingPace": Quali_Pace_Data,
+    "RaceResult": Results
 }
 
 training_df = pd.DataFrame(trainingData)
-training_df.to_csv('training.csv', index=False)
+training_df.to_csv('training.csv', index=False, mode='a')
 print(training_df)
