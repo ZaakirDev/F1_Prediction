@@ -2,8 +2,9 @@ import tensorflow as tf
 from tensorflow import keras
 from keras import layers
 import numpy as np
-from sklearn.preprocessing import OneHotEncoder
 import pandas as pd
+from sklearn.preprocessing import OneHotEncoder
+
 
 TEAMS = [
     ["Mercedes"],
@@ -157,85 +158,119 @@ def encode(val, type):
     
     return -1
 
+
 # -------------------------------
 # 1. Prepare training data
 # -------------------------------
-X_train = np.array()  # Input features
-y_train = np.array()  # One-hot encoded labels
+# X_train = np.array()  # Input features
+# y_train = np.array()  # One-hot encoded labels
 
 trainingDf = pd.read_csv('training.csv')
+
+lastRace = None
+normalized_airTemp = None
+normalized_trackTemp = None
+
 for row in trainingDf.itertuples():
-    encodedDriver = encode(row.Driver, 'D')
-    qualiPos = row.QualifyingPosition # NOTE: NEED TO PREPROCESS
-    encodedTeam = encode(row.Team, 'T')
-    encodedRace = encode(row.Race, 'R')
-    year = row.Year # NOTE: NEED TO PREPROCESS
-    airTemps = row.AirTemps # NOTE: NEED TO PREPROCESS
-    trackTemps = row.TrackTemps # NOTE: NEED TO PREPROCESS
-    rain = row.Rain
-    qualiPace = row.QualifyingPace # NOTE: NEED TO PREPROCESS
+    driver = row.Driver
+    qualiPos = row.QualifyingPosition
+    encodedTeam = row.Team
+    encodedRace = row.Race
+    year = row.Year
+    qualiPace = row.QualifyingPace
     result = row.RaceResult
+    rain = row.Rain
+
+    airTemps = round(float(row.AirTemps), 2)
+    trackTemps = round(float(row.TrackTemps), 2)
+
+    if lastRace != encodedRace:
+        filtered_df = trainingDf[
+            (trainingDf["Driver"] == "ALO") & # TODO: CHANGE THE ALONSO BIT TO BE THE ENCODED VALUE!!!
+            (trainingDf["Race"] == encodedRace)
+        ]
+        
+        max_value = round(float(filtered_df["AirTemps"].max()), 2)
+        min_value = round(float(filtered_df["AirTemps"].min()), 2)
+        normalized_airTemp = (airTemps - min_value)/(max_value - min_value)
+
+        max_value = round(float(filtered_df["TrackTemps"].max()), 2)
+        min_value = round(float(filtered_df["TrackTemps"].min()), 2)
+        normalized_trackTemp = (trackTemps - min_value)/(max_value - min_value)
+
+        lastRace = encodedRace
+    
+    print(driver)
+    print(qualiPos)
+    print(encodedTeam)
+    print(encodedRace)
+    print(year)
+    print(qualiPace)
+    print(result)
+    print(rain)
+    print(normalized_airTemp)
+    print(normalized_trackTemp)
 
 
-# -------------------------------
-# 2. Create neural network
-# -------------------------------
+# # -------------------------------
+# # 2. Create neural network
+# # -------------------------------
 
-model = keras.Sequential([
-    layers.Input(shape=(X_train.shape[1],)),
+# model = keras.Sequential([
+#     layers.Input(shape=(X_train.shape[1],)),
 
-    layers.Dense(64, activation='relu'),
-    layers.Dense(64, activation='relu'),
+#     layers.Dense(64, activation='relu'),
+#     layers.Dense(64, activation='relu'),
 
-    layers.Dense(y_train.shape[1], activation='softmax')
-])
-
-
-# -------------------------------
-# 3. Compile model
-# -------------------------------
-
-model.compile(
-    optimizer='adam',
-    loss='categorical_crossentropy',
-    metrics=['accuracy']
-)
+#     layers.Dense(y_train.shape[1], activation='softmax')
+# ])
 
 
-# -------------------------------
-# 4. Train model
-# -------------------------------
+# # -------------------------------
+# # 3. Compile model
+# # -------------------------------
 
-history = model.fit(
-    X_train,
-    y_train,
-    epochs=100,
-    batch_size=32,
-    validation_data=(X_test, y_test)
-)
+# model.compile(
+#     optimizer='adam',
+#     loss='categorical_crossentropy',
+#     metrics=['accuracy']
+# )
 
 
-# -------------------------------
-# 5. Evaluate model
-# -------------------------------
+# # -------------------------------
+# # 4. Train model
+# # -------------------------------
 
-loss, accuracy = model.evaluate(X_test, y_test)
-
-print(f"Test Loss: {loss}")
-print(f"Test Accuracy: {accuracy}")
-
-
-# -------------------------------
-# 6. Make predictions
-# -------------------------------
-
-predictions = model.predict(X_test)
-
-predicted_classes = np.argmax(predictions, axis=1)
+# history = model.fit(
+#     X_train,
+#     y_train,
+#     epochs=100,
+#     batch_size=32,
+#     validation_data=(X_test, y_test)
+# )
 
 
-# -------------------------------
-# 7. Save model
-# -------------------------------
+# # -------------------------------
+# # 5. Evaluate model
+# # -------------------------------
 
-model.save("model.keras")
+# loss, accuracy = model.evaluate(X_test, y_test)
+
+# print(f"Test Loss: {loss}")
+# print(f"Test Accuracy: {accuracy}")
+
+
+# # -------------------------------
+# # 6. Make predictions
+# # -------------------------------
+
+# predictions = model.predict(X_test)
+
+# predicted_classes = np.argmax(predictions, axis=1)
+
+
+# # -------------------------------
+# # 7. Save model
+# # -------------------------------
+
+# model.save("model.keras")
