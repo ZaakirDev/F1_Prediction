@@ -172,21 +172,21 @@ normalized_airTemp = None
 normalized_trackTemp = None
 
 for row in trainingDf.itertuples():
-    driver = row.Driver
+    encodedDriver = encode(row.Driver, 'D')
     qualiPos = row.QualifyingPosition
     encodedTeam = row.Team
     encodedRace = row.Race
     year = row.Year
-    qualiPace = row.QualifyingPace
     result = row.RaceResult
     rain = row.Rain
 
+    qualiPace = round(float(row.QualifyingPace), 2)
     airTemps = round(float(row.AirTemps), 2)
     trackTemps = round(float(row.TrackTemps), 2)
 
     if lastRace != encodedRace:
         filtered_df = trainingDf[
-            (trainingDf["Driver"] == "ALO") & # TODO: CHANGE THE ALONSO BIT TO BE THE ENCODED VALUE!!!
+            (trainingDf["Driver"] == row.Driver) &
             (trainingDf["Race"] == encodedRace)
         ]
         
@@ -198,14 +198,27 @@ for row in trainingDf.itertuples():
         min_value = round(float(filtered_df["TrackTemps"].min()), 2)
         normalized_trackTemp = (trackTemps - min_value)/(max_value - min_value)
 
+        max_value = round(float(filtered_df["QualifyingPace"].max()), 2)
+        min_value = round(float(filtered_df["QualifyingPace"].min()), 2)
+        normalized_qualiPace = (qualiPace - min_value)/(max_value - min_value)
+
         lastRace = encodedRace
+    else:
+        filtered_df = trainingDf[
+            (trainingDf["Driver"] == row.Driver) &
+            (trainingDf["Race"] == encodedRace)
+        ]
+
+        max_value = round(float(filtered_df["QualifyingPace"].max()), 2)
+        min_value = round(float(filtered_df["QualifyingPace"].min()), 2)
+        normalized_qualiPace = (qualiPace - min_value)/(max_value - min_value)
     
-    print(driver)
+    print(encodedDriver)
     print(qualiPos)
     print(encodedTeam)
     print(encodedRace)
     print(year)
-    print(qualiPace)
+    print(normalized_qualiPace)
     print(result)
     print(rain)
     print(normalized_airTemp)
